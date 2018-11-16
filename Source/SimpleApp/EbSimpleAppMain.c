@@ -90,7 +90,7 @@ APPEXITCONDITIONTYPE ProcessOutputStreamBuffer(
     APPEXITCONDITIONTYPE    return_value = APP_ExitConditionNone;
     EB_ERRORTYPE            stream_status = EB_ErrorNone;
     // System performance variables
-    static int              frameCount = 0;
+    static long long int              frameCount = 0;
 
     // non-blocking call
     stream_status = EbH265GetPacket(componentHandle, headerPtr, picSendDone);
@@ -103,7 +103,8 @@ APPEXITCONDITIONTYPE ProcessOutputStreamBuffer(
 
         // Update Output Port Activity State
         return_value = (headerPtr->nFlags & EB_BUFFERFLAG_EOS) ? APP_ExitConditionFinished : APP_ExitConditionNone;
-        printf("\b\b\b\b\b\b\b\b\b%9d", ++frameCount);
+        //printf("\b\b\b\b\b\b\b\b\b%9d", ++frameCount);
+        printf("\nDecode Order:\t%lld\tdts:\t%lld\tpts:\t%lld\tSliceType:\t%d", frameCount++, headerPtr->dts , headerPtr->pts, headerPtr->sliceType);
 
         fflush(stdout);
     }
@@ -198,7 +199,7 @@ void ReadInputFrames(
 
     return;
 }
-
+#define  TEST_IDR 0
 APPEXITCONDITIONTYPE ProcessInputBuffer(
     EbConfig_t                  *config,
     EbAppContext_t              *appCallBack)
@@ -207,6 +208,7 @@ APPEXITCONDITIONTYPE ProcessInputBuffer(
     EB_BUFFERHEADERTYPE     *headerPtr = appCallBack->inputPictureBuffer; // needs to change for buffered input
     EB_COMPONENTTYPE        *componentHandle = (EB_COMPONENTTYPE*)appCallBack->svtEncoderHandle;
     APPEXITCONDITIONTYPE     return_value = APP_ExitConditionNone;
+    static int               frameCount = 0;
 
     if (config->stopEncoder == 0) {
         ReadInputFrames(
@@ -217,11 +219,16 @@ APPEXITCONDITIONTYPE ProcessInputBuffer(
         if (config->stopEncoder == 0) {
             // Fill in Buffers Header control data
             headerPtr->nOffset = 0;
-            headerPtr->nTimeStamp = 0;
             headerPtr->nFlags = 0;
             headerPtr->pAppPrivate = NULL;
-            headerPtr->nFlags = 0;
-
+            headerPtr->pts         = frameCount++;
+            headerPtr->sliceType = INVALID_SLICE;
+#if TEST_IDR
+            if (frameCount == 200)
+                headerPtr->sliceType = IDR_SLICE;
+            if (frameCount == 150)
+                headerPtr->sliceType = I_SLICE;
+#endif
             // Send the picture
             EbH265EncSendPicture(componentHandle, headerPtr);
         }
@@ -232,7 +239,6 @@ APPEXITCONDITIONTYPE ProcessInputBuffer(
             headerPtrLast.nTickCount = 0;
             headerPtrLast.pAppPrivate = NULL;
             headerPtrLast.nOffset = 0;
-            headerPtrLast.nTimeStamp = 0;
             headerPtrLast.nFlags = EB_BUFFERFLAG_EOS;
             headerPtrLast.pBuffer = NULL;
 

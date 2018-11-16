@@ -524,6 +524,10 @@ void LogErrorOutput(
         fprintf(errorLogFile, "Error: remainingBytes has to be multiple of 2 for 16 bit input\n");
         break;
 
+    case EB_ENC_RC_ERROR8:
+        fprintf(errorLogFile, "Error: hlRateControlHistorgramQueue Overflow\n");
+        break;
+
         // EB_ENC_RD_COST_ERRORS:
     case EB_ENC_RD_COST_ERROR1:
         fprintf(errorLogFile, "Error: Skip mode only exists in 2Nx2N partition type!\n");
@@ -612,8 +616,6 @@ void LogErrorOutput(
 void ProcessInputFieldStandardMode(
 
     EbConfig_t               *config,
-
-    InputBitstreamContext_t  *contextPtr,
     EB_BUFFERHEADERTYPE     *headerPtr,
     FILE                     *inputFile,
     EB_U8                   *lumaInputPtr,
@@ -635,7 +637,7 @@ void ProcessInputFieldStandardMode(
     // Y
     ebInputPtr = lumaInputPtr;
     // Skip 1 luma row if bottom field (point to the bottom field)
-    if (contextPtr->processedFrameCount % 2 != 0)
+    if (config->processedFrameCount % 2 != 0)
         fseeko64(inputFile, (long)sourceLumaRowSize, SEEK_CUR);
 
     for (inputRowIndex = 0; inputRowIndex < inputPaddedHeight; inputRowIndex++) {
@@ -649,7 +651,7 @@ void ProcessInputFieldStandardMode(
     // U
     ebInputPtr = cbInputPtr;
     // Step back 1 luma row if bottom field (undo the previous jump), and skip 1 chroma row if bottom field (point to the bottom field)
-    if (contextPtr->processedFrameCount % 2 != 0) {
+    if (config->processedFrameCount % 2 != 0) {
         fseeko64(inputFile, -(long)sourceLumaRowSize, SEEK_CUR);
         fseeko64(inputFile, (long)sourceChromaRowSize, SEEK_CUR);
     }
@@ -677,7 +679,7 @@ void ProcessInputFieldStandardMode(
     }
 
     // Step back 1 chroma row if bottom field (undo the previous jump)
-    if (contextPtr->processedFrameCount % 2 != 0) {
+    if (config->processedFrameCount % 2 != 0) {
         fseeko64(inputFile, -(long)sourceChromaRowSize, SEEK_CUR);
     }
 }
@@ -752,7 +754,6 @@ EB_S32 GetNextQpFromQpFile(
 }
 
 void ReadInputFrames(
-    InputBitstreamContext_t     *contextPtr,
     EbConfig_t                  *config,
     unsigned char                is16bit,
     EB_BUFFERHEADERTYPE         *headerPtr)
@@ -783,7 +784,6 @@ void ReadInputFrames(
 
                 ProcessInputFieldStandardMode(
                     config,
-                    contextPtr,
                     headerPtr,
                     inputFile,
                     inputPtr->luma,
@@ -798,7 +798,6 @@ void ReadInputFrames(
 
                     ProcessInputFieldStandardMode(
                         config,
-                        contextPtr,
                         headerPtr,
                         inputFile,
                         inputPtr->luma,
@@ -808,7 +807,7 @@ void ReadInputFrames(
                 }
 
                 // Reset the pointer position after a top field
-                if (contextPtr->processedFrameCount % 2 == 0) {
+                if (config->processedFrameCount % 2 == 0) {
                     fseek(inputFile, -(long)(readSize << 1), SEEK_CUR);
                 }
             }
@@ -918,7 +917,6 @@ void ReadInputFrames(
 
                 ProcessInputFieldStandardMode(
                     config,
-                    contextPtr,
                     headerPtr,
                     inputFile,
                     inputPtr->luma,
@@ -928,7 +926,6 @@ void ReadInputFrames(
 
                 ProcessInputFieldStandardMode(
                     config,
-                    contextPtr,
                     headerPtr,
                     inputFile,
                     inputPtr->lumaExt,
@@ -943,7 +940,6 @@ void ReadInputFrames(
 
                     ProcessInputFieldStandardMode(
                         config,
-                        contextPtr,
                         headerPtr,
                         inputFile,
                         inputPtr->luma,
@@ -953,7 +949,6 @@ void ReadInputFrames(
 
                     ProcessInputFieldStandardMode(
                         config,
-                        contextPtr,
                         headerPtr,
                         inputFile,
                         inputPtr->lumaExt,
@@ -963,7 +958,7 @@ void ReadInputFrames(
                 }
 
                 // Reset the pointer position after a top field
-                if (contextPtr->processedFrameCount % 2 == 0) {
+                if (config->processedFrameCount % 2 == 0) {
                     fseek(inputFile, -(long)(readSize << 1), SEEK_CUR);
                 }
 
@@ -1046,18 +1041,18 @@ void ReadInputFrames(
             inputPtr->crStride = config->inputPaddedWidth >> 1;
             inputPtr->cbStride = config->inputPaddedWidth >> 1;
 
-            inputPtr->luma = config->sequenceBuffer[contextPtr->processedFrameCount % config->bufferedInput];
-            inputPtr->cb = config->sequenceBuffer[contextPtr->processedFrameCount % config->bufferedInput] + luma8bitSize;
-            inputPtr->cr = config->sequenceBuffer[contextPtr->processedFrameCount % config->bufferedInput] + luma8bitSize + chroma8bitSize;
+            inputPtr->luma = config->sequenceBuffer[config->processedFrameCount % config->bufferedInput];
+            inputPtr->cb = config->sequenceBuffer[config->processedFrameCount % config->bufferedInput] + luma8bitSize;
+            inputPtr->cr = config->sequenceBuffer[config->processedFrameCount % config->bufferedInput] + luma8bitSize + chroma8bitSize;
 
             inputPtr->luma = inputPtr->luma + ((config->inputPaddedWidth*TOP_INPUT_PADDING + LEFT_INPUT_PADDING));
             inputPtr->cb = inputPtr->cb + (((config->inputPaddedWidth >> 1)*(TOP_INPUT_PADDING >> 1) + (LEFT_INPUT_PADDING >> 1)));
             inputPtr->cr = inputPtr->cr + (((config->inputPaddedWidth >> 1)*(TOP_INPUT_PADDING >> 1) + (LEFT_INPUT_PADDING >> 1)));
 
             if (is16bit) {
-                inputPtr->lumaExt = config->sequenceBuffer[contextPtr->processedFrameCount % config->bufferedInput] + luma8bitSize + 2 * chroma8bitSize;
-                inputPtr->cbExt = config->sequenceBuffer[contextPtr->processedFrameCount % config->bufferedInput] + luma8bitSize + 2 * chroma8bitSize + luma2bitSize;
-                inputPtr->crExt = config->sequenceBuffer[contextPtr->processedFrameCount % config->bufferedInput] + luma8bitSize + 2 * chroma8bitSize + luma2bitSize + chroma2bitSize;
+                inputPtr->lumaExt = config->sequenceBuffer[config->processedFrameCount % config->bufferedInput] + luma8bitSize + 2 * chroma8bitSize;
+                inputPtr->cbExt = config->sequenceBuffer[config->processedFrameCount % config->bufferedInput] + luma8bitSize + 2 * chroma8bitSize + luma2bitSize;
+                inputPtr->crExt = config->sequenceBuffer[config->processedFrameCount % config->bufferedInput] + luma8bitSize + 2 * chroma8bitSize + luma2bitSize + chroma2bitSize;
 
                 inputPtr->lumaExt = inputPtr->lumaExt + config->inputPaddedWidth*TOP_INPUT_PADDING + LEFT_INPUT_PADDING;
                 inputPtr->cbExt = inputPtr->cbExt + (config->inputPaddedWidth >> 1)*(TOP_INPUT_PADDING >> 1) + (LEFT_INPUT_PADDING >> 1);
@@ -1088,18 +1083,18 @@ void ReadInputFrames(
             inputPtr->crStride = config->inputPaddedWidth >> 1;
             inputPtr->cbStride = config->inputPaddedWidth >> 1;
 
-            inputPtr->luma = config->sequenceBuffer[contextPtr->processedFrameCount % config->bufferedInput];
-            inputPtr->cb = config->sequenceBuffer[contextPtr->processedFrameCount % config->bufferedInput] + luma8bitSize;
-            inputPtr->cr = config->sequenceBuffer[contextPtr->processedFrameCount % config->bufferedInput] + luma8bitSize + chroma8bitSize;
+            inputPtr->luma = config->sequenceBuffer[config->processedFrameCount % config->bufferedInput];
+            inputPtr->cb = config->sequenceBuffer[config->processedFrameCount % config->bufferedInput] + luma8bitSize;
+            inputPtr->cr = config->sequenceBuffer[config->processedFrameCount % config->bufferedInput] + luma8bitSize + chroma8bitSize;
             inputPtr->luma = inputPtr->luma + ((config->inputPaddedWidth*TOP_INPUT_PADDING + LEFT_INPUT_PADDING) << tenBitPackedMode);
             inputPtr->cb = inputPtr->cb + (((config->inputPaddedWidth >> 1)*(TOP_INPUT_PADDING >> 1) + (LEFT_INPUT_PADDING >> 1)) << tenBitPackedMode);
             inputPtr->cr = inputPtr->cr + (((config->inputPaddedWidth >> 1)*(TOP_INPUT_PADDING >> 1) + (LEFT_INPUT_PADDING >> 1)) << tenBitPackedMode);
 
 
             if (is16bit) {
-                inputPtr->lumaExt = config->sequenceBuffer[contextPtr->processedFrameCount % config->bufferedInput] + luma8bitSize + 2 * chroma8bitSize;
-                inputPtr->cbExt = config->sequenceBuffer[contextPtr->processedFrameCount % config->bufferedInput] + luma8bitSize + 2 * chroma8bitSize + luma10bitSize;
-                inputPtr->crExt = config->sequenceBuffer[contextPtr->processedFrameCount % config->bufferedInput] + luma8bitSize + 2 * chroma8bitSize + luma10bitSize + chroma10bitSize;
+                inputPtr->lumaExt = config->sequenceBuffer[config->processedFrameCount % config->bufferedInput] + luma8bitSize + 2 * chroma8bitSize;
+                inputPtr->cbExt = config->sequenceBuffer[config->processedFrameCount % config->bufferedInput] + luma8bitSize + 2 * chroma8bitSize + luma10bitSize;
+                inputPtr->crExt = config->sequenceBuffer[config->processedFrameCount % config->bufferedInput] + luma8bitSize + 2 * chroma8bitSize + luma10bitSize + chroma10bitSize;
                 inputPtr->lumaExt = inputPtr->lumaExt + config->inputPaddedWidth*TOP_INPUT_PADDING + LEFT_INPUT_PADDING;
                 inputPtr->cbExt = inputPtr->cbExt + (config->inputPaddedWidth >> 1)*(TOP_INPUT_PADDING >> 1) + (LEFT_INPUT_PADDING >> 1);
                 inputPtr->crExt = inputPtr->crExt + (config->inputPaddedWidth >> 1)*(TOP_INPUT_PADDING >> 1) + (LEFT_INPUT_PADDING >> 1);
@@ -1169,7 +1164,6 @@ APPEXITCONDITIONTYPE ProcessInputBuffer(
     EbConfig_t             *config,
     EbAppContext_t         *appCallBack)
 {
-    InputBitstreamContext_t *contextPtr = &appCallBack->inputContext;
     unsigned char            is16bit = (unsigned char)(config->encoderBitDepth > 8);
     EB_BUFFERHEADERTYPE     *headerPtr = appCallBack->inputBufferPool[0]; // needs to change for buffered input
     EB_COMPONENTTYPE        *componentHandle = (EB_COMPONENTTYPE*)appCallBack->svtEncoderHandle;
@@ -1183,9 +1177,9 @@ APPEXITCONDITIONTYPE ProcessInputBuffer(
     EB_S64                  totalBytesToProcessCount;
     EB_S64                  remainingByteCount;
 
-    if (config->injector && contextPtr->processedFrameCount)
+    if (config->injector && config->processedFrameCount)
     {
-        EbInjector(contextPtr->processedFrameCount, config->injectorFrameRate);
+        EbInjector(config->processedFrameCount, config->injectorFrameRate);
     }
 
 	totalBytesToProcessCount = (framesToBeEncoded < 0) ? -1 : (config->encoderBitDepth == 10 && config->compressedTenBitFormat == 1) ?
@@ -1193,20 +1187,19 @@ APPEXITCONDITIONTYPE ProcessInputBuffer(
         framesToBeEncoded * SIZE_OF_ONE_FRAME_IN_BYTES(inputPaddedWidth, inputPaddedHeight, is16bit);
 
 
-    remainingByteCount       = (totalBytesToProcessCount < 0) ?   -1 :  totalBytesToProcessCount - (EB_S64) contextPtr->processedByteCount;
+    remainingByteCount       = (totalBytesToProcessCount < 0) ?   -1 :  totalBytesToProcessCount - (EB_S64)config->processedByteCount;
 
     // If there are bytes left to encode, configure the header
     if (remainingByteCount != 0 && config->stopEncoder == EB_FALSE) {
         ReadInputFrames(
-            contextPtr,
             config,
             is16bit,
             headerPtr);
 
         // Update the context parameters
-        contextPtr->processedByteCount += headerPtr->nFilledLen;
+        config->processedByteCount += headerPtr->nFilledLen;
         headerPtr->pAppPrivate          = (EB_PTR)EB_NULL;
-        config->framesEncoded           = (EB_S32)(++contextPtr->processedFrameCount);
+        config->framesEncoded           = (EB_S32)(++config->processedFrameCount);
 
         // Configuration parameters changed on the fly
         if (config->useQpFile && config->qpFile)
@@ -1220,8 +1213,8 @@ APPEXITCONDITIONTYPE ProcessInputBuffer(
 
         // Fill in Buffers Header control data
         headerPtr->nOffset      = 0;
-        headerPtr->nTimeStamp   = 0;
-        headerPtr->nFlags       = 0;
+        headerPtr->pts          = config->processedFrameCount-1;
+        headerPtr->sliceType    = INVALID_SLICE;
 
 #if CHKN_EOS
         headerPtr->nFlags = 0; 
@@ -1232,16 +1225,16 @@ APPEXITCONDITIONTYPE ProcessInputBuffer(
         // Send the picture
         EbH265EncSendPicture(componentHandle, headerPtr);
         
-        if ((contextPtr->processedFrameCount == (EB_U64)config->framesToBeEncoded) || config->stopEncoder) {
+        if ((config->processedFrameCount == (EB_U64)config->framesToBeEncoded) || config->stopEncoder) {
 
             headerPtr->nAllocLen    = 0;
             headerPtr->nFilledLen   = 0;
             headerPtr->nTickCount   = 0;
             headerPtr->pAppPrivate  = NULL;
             headerPtr->nOffset      = 0;
-            headerPtr->nTimeStamp   = 0;
             headerPtr->nFlags       = EB_BUFFERFLAG_EOS;
             headerPtr->pBuffer      = NULL;
+            headerPtr->sliceType    = INVALID_SLICE;
 
             EbH265EncSendPicture(componentHandle, headerPtr);
         

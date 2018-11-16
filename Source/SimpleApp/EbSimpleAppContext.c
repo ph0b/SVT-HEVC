@@ -100,6 +100,7 @@ EB_ERRORTYPE EbAppContextCtor(EbAppContext_t *contextPtr, EbConfig_t *config)
 
     contextPtr->inputPictureBuffer->nSize = sizeof(EB_BUFFERHEADERTYPE);
     contextPtr->inputPictureBuffer->pAppPrivate = NULL;
+    contextPtr->inputPictureBuffer->sliceType = INVALID_SLICE;
     // Allocate frame buffer for the pBuffer
     AllocateFrameBuffer(
         config,
@@ -114,6 +115,7 @@ EB_ERRORTYPE EbAppContextCtor(EbAppContext_t *contextPtr, EbConfig_t *config)
     contextPtr->outputStreamBuffer->nSize = sizeof(EB_BUFFERHEADERTYPE);
     contextPtr->outputStreamBuffer->nAllocLen = EB_OUTPUTSTREAMBUFFERSIZE_MACRO(config->sourceWidth*config->sourceHeight);
     contextPtr->outputStreamBuffer->pAppPrivate = (void*)contextPtr;
+    contextPtr->outputStreamBuffer->sliceType = INVALID_SLICE;
 
     return return_error;
 }
@@ -155,7 +157,8 @@ EB_ERRORTYPE CopyConfigurationParameters(
     callbackData->ebEncParameters.sourceWidth = config->sourceWidth;
     callbackData->ebEncParameters.sourceHeight = config->sourceHeight;
     callbackData->ebEncParameters.encoderBitDepth = config->encoderBitDepth;
-
+    callbackData->ebEncParameters.codeVpsSpsPps = 0;
+    
     return return_error;
 
 }
@@ -185,7 +188,14 @@ EB_ERRORTYPE InitEncoder(
 
     // STEP 5: Init Encoder
     return_error = EbInitEncoder(callbackData->svtEncoderHandle);
-
+    if (callbackData->ebEncParameters.codeVpsSpsPps == 0) {
+        callbackData->outputStreamBuffer->nFilledLen = 0;
+        return_error = EbH265EncStreamHeader(callbackData->svtEncoderHandle, callbackData->outputStreamBuffer);
+        if (return_error != EB_ErrorNone) {
+            return return_error;
+        }
+        fwrite(callbackData->outputStreamBuffer->pBuffer, 1, callbackData->outputStreamBuffer->nFilledLen, config->bitstreamFile);
+    }
     ///************************* LIBRARY INIT [END] *********************///
     return return_error;
 }

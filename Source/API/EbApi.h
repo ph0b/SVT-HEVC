@@ -23,11 +23,7 @@ extern "C" {
 #define EB_HME_SEARCH_AREA_ROW_MAX_COUNT        2
     
 #ifdef _WIN32
-#ifdef __EB_EXPORTS
 #define EB_API __declspec(dllexport)
-#else
-#define EB_API __declspec(dllimport)
-#endif
 #else
 #ifdef __EB_EXPORTS
 #define EB_API
@@ -73,6 +69,14 @@ typedef struct EbLinkedListNode
 
 } EbLinkedListNode;
 
+#define EB_SLICE        unsigned int
+#define B_SLICE         0
+#define P_SLICE         1
+#define I_SLICE         2
+#define IDR_SLICE       3
+#define NON_REF_SLICE   4
+#define INVALID_SLICE   0xFF
+
 typedef struct EB_BUFFERHEADERTYPE
 {
     unsigned int nSize;
@@ -82,7 +86,8 @@ typedef struct EB_BUFFERHEADERTYPE
     unsigned int nOffset;
     void* pAppPrivate;
     unsigned int nTickCount;
-    signed long long nTimeStamp;
+    signed long long dts;
+    signed long long pts;
     unsigned int nFlags;
     unsigned int qpValue;
     unsigned int sliceType;
@@ -117,19 +122,6 @@ typedef enum EB_ERRORTYPE
 // Display Total Memory at the end of the memory allocations
 #define DISPLAY_MEMORY                                  0
 
-/***************************************
-* Input Bitstream Context
-***************************************/
-typedef struct InputBitstreamContext_s {
-
-    unsigned long long  processedByteCount;
-    unsigned long long  processedFrameCount;
-
-    signed long long  previousTimeSeconds;
-    double  measuredFrameRate;
-
-} InputBitstreamContext_t;
-
 // For 8-bit and 10-bit packed inputs, the luma, cb, and cr fields should be used
 //   for the three input picture planes.  However, for 10-bit unpacked planes the
 //   lumaExt, cbExt, and crExt fields should be used hold the extra 2-bits of 
@@ -147,8 +139,6 @@ typedef struct EB_H265_ENC_INPUT
     unsigned int   crStride;
     unsigned int   cbStride;
 
-    // Local Contexts
-    InputBitstreamContext_t             inputContext;
 } EB_H265_ENC_INPUT;
 
 // Will contain the EbEncApi which will live in the EncHandle class
@@ -251,13 +241,15 @@ typedef struct EB_H265_ENC_CONFIGURATION
     unsigned int              level;
 
 	// Buffer Configuration
-    unsigned int				inputOutputBufferFifoInitCount;              // add check for minimum 
+    unsigned int			  inputOutputBufferFifoInitCount;              // add check for minimum 
 
-    signed int              injectorFrameRate;
+    signed int                injectorFrameRate;
     unsigned int              speedControlFlag;
     
     // ASM Type
-    EB_ASM			    asmType;
+    EB_ASM			          asmType;
+
+    unsigned char             codeVpsSpsPps;
 
 } EB_H265_ENC_CONFIGURATION;
 
@@ -270,6 +262,10 @@ EB_API EB_ERRORTYPE EbDeinitEncoder(
 EB_API EB_ERRORTYPE EbH265EncSetParameter(
     EB_COMPONENTTYPE           *h265EncComponent,
     EB_H265_ENC_CONFIGURATION  *pComponentParameterStructure);
+
+EB_API EB_ERRORTYPE EbH265EncStreamHeader(
+    EB_COMPONENTTYPE           *h265EncComponent,
+    EB_BUFFERHEADERTYPE*        outputStreamPtr);
 
 EB_API EB_ERRORTYPE EbH265EncSendPicture(
     EB_COMPONENTTYPE      *h265EncComponent,
