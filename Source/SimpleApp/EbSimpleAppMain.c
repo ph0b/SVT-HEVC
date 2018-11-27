@@ -22,6 +22,8 @@
 #define ftello64 _ftelli64
 #define FOPEN(f,s,m) fopen_s(&f,s,m)
 #else
+#define fseeko64 fseek
+#define ftello64 ftell
 #define FOPEN(f,s,m) f=fopen(s,m)
 #include <pthread.h>
 #include <semaphore.h>
