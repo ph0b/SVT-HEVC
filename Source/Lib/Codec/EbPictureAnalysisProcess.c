@@ -996,7 +996,7 @@ void CheckInputForBordersAndPreprocess(
 		filter2Lines = (ABS((EB_S64)avgLine1 - (EB_S64)avgLine2) > (EB_S64)(avgLine2 * SAMPLE_THRESHOLD_PRECENT_TWO_BORDER_LINES / 100)) ? EB_TRUE : EB_FALSE;
 		filter1Line = (ABS((EB_S64)avgLine1 - (EB_S64)avgLine0) > (EB_S64)(avgLine1 * SAMPLE_THRESHOLD_PRECENT_BORDER_LINE / 100)) ? EB_TRUE : EB_FALSE;
 
-		//printf("--filter2Lines %i--filter1Line% i\n",filter2Lines,filter1Line);
+		//SVT_PRINTF_3("--filter2Lines %i--filter1Line% i\n",filter2Lines,filter1Line);
 
 	}
 
@@ -2958,7 +2958,7 @@ EB_ERRORTYPE SubSampleFilterNoise(
 
 				if (denBlkVar<denBlkVarTh && noiseBlkVar> noiseBlkVarTh) {
 					pictureControlSetPtr->lcuFlatNoiseArray[lcuIndex] = 1;
-					//printf("POC %i (%i,%i) denBlkVar: %i  noiseBlkVar :%i\n", pictureControlSetPtr->pictureNumber,lcuOriginX,lcuOriginY, denBlkVar, noiseBlkVar);
+					//SVT_PRINTF("POC %i (%i,%i) denBlkVar: %i  noiseBlkVar :%i\n", pictureControlSetPtr->pictureNumber,lcuOriginX,lcuOriginY, denBlkVar, noiseBlkVar);
 					newTotFN++;
 
 				}
@@ -4508,7 +4508,7 @@ void* PictureAnalysisKernel(void *inputPtr)
 		sequenceControlSetPtr = (SequenceControlSet_t*)pictureControlSetPtr->sequenceControlSetWrapperPtr->objectPtr;
 		inputPicturePtr = pictureControlSetPtr->enhancedPicturePtr;
 #if DEADLOCK_DEBUG
-        printf("POC %lld PA IN \n", pictureControlSetPtr->pictureNumber);
+        SVT_PRINTF_2("POC %lld PA IN \n", pictureControlSetPtr->pictureNumber);
 #endif
 		paReferenceObject = (EbPaReferenceObject_t*)pictureControlSetPtr->paReferencePictureWrapperPtr->objectPtr;
 		inputPaddedPicturePtr = (EbPictureBufferDesc_t*)paReferenceObject->inputPaddedPicturePtr;
@@ -4587,7 +4587,7 @@ void* PictureAnalysisKernel(void *inputPtr)
 		outputResultsPtr->pictureControlSetWrapperPtr = inputResultsPtr->pictureControlSetWrapperPtr;
 
 #if DEADLOCK_DEBUG
-        printf("POC %lld PA OUT \n", pictureControlSetPtr->pictureNumber);
+        SVT_PRINTF_2("POC %lld PA OUT \n", pictureControlSetPtr->pictureNumber);
 #endif
 
 		// Release the Input Results

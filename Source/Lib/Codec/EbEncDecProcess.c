@@ -3539,7 +3539,7 @@ void* EncDecKernel(void *inputPtr)
         lastLcuFlag = EB_FALSE;
         is16bit = (EB_BOOL)(sequenceControlSetPtr->staticConfig.encoderBitDepth > EB_8BIT);
 #if DEADLOCK_DEBUG
-        printf("POC %lld ENCDEC IN \n", pictureControlSetPtr->pictureNumber);
+        SVT_PRINTF_2("POC %lld ENCDEC IN \n", pictureControlSetPtr->pictureNumber);
 #endif
         // LCU Constants
         lcuSize = (EB_U8)sequenceControlSetPtr->lcuSize;
@@ -3914,7 +3914,7 @@ void* EncDecKernel(void *inputPtr)
         }
 
 #if DEADLOCK_DEBUG
-        printf("POC %lld ENCDEC OUT \n", pictureControlSetPtr->pictureNumber);
+        SVT_PRINTF_2("POC %lld ENCDEC OUT \n", pictureControlSetPtr->pictureNumber);
 #endif
 
         // Send the Entropy Coder incremental updates as each LCU row becomes available

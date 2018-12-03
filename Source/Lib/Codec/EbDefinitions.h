@@ -560,14 +560,22 @@ extern    EB_U32                   libMutexCount;
     libMallocCount++;     
 #endif
 
-
+#if LIB_PRINTF_ENABLE
+#define SVT_PRINTF_3 printf
+#define SVT_PRINTF_2 printf
+#define SVT_PRINTF(a) printf("")
+#else
+#define SVT_PRINTF_3(a,b,c) printf("")
+#define SVT_PRINTF_2(a,b) printf("")
+#define SVT_PRINTF(a) printf("")
+#endif
 
 #define EB_MEMORY() \
-    printf("Total Number of Mallocs in Library: %d\n", libMallocCount); \
-    printf("Total Number of Threads in Library: %d\n", libThreadCount); \
-    printf("Total Number of Semaphore in Library: %d\n", libSemaphoreCount); \
-    printf("Total Number of Mutex in Library: %d\n", libMutexCount); \
-    printf("Total Library Memory: %.2lf KB\n\n",*totalLibMemory/(double)1024);
+    SVT_PRINTF_2("Total Number of Mallocs in Library: %d\n", libMallocCount); \
+    SVT_PRINTF_2("Total Number of Threads in Library: %d\n", libThreadCount); \
+    SVT_PRINTF_2("Total Number of Semaphore in Library: %d\n", libSemaphoreCount); \
+    SVT_PRINTF_2("Total Number of Mutex in Library: %d\n", libMutexCount); \
+    SVT_PRINTF_2("Total Library Memory: %.2lf KB\n\n",*totalLibMemory/(double)1024);
 
 #define EB_MALLOC(type, pointer, nElements, pointerClass) \
     pointer = (type) malloc(nElements); \

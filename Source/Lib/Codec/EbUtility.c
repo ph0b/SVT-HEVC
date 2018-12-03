@@ -470,11 +470,11 @@ void ComputeOverallElapsedTime(unsigned long long Startseconds, unsigned long lo
     useconds = Finishuseconds - Startuseconds;
     mtime = ((seconds) * 1000 + useconds / 1000.0) + 0.5;
     *duration = (double)mtime / 1000;
-    //printf("\nElapsed time: %3.3ld seconds\n", mtime/1000);
+    //SVT_PRINTF("\nElapsed time: %3.3ld seconds\n", mtime/1000);
 #elif _WIN32 //(WIN_ENCODER_TIMING || WIN_DECODER_TIMING)
     //double  duration;
     *duration = (double)(Finishseconds - Startseconds) / CLOCKS_PER_SEC;
-    //printf("\nElapsed time: %3.3f seconds\n", *duration);
+    //SVT_PRINTF("\nElapsed time: %3.3f seconds\n", *duration);
     (void)(Startuseconds);
     (void)(Finishuseconds);
 #else
@@ -494,11 +494,11 @@ void ComputeOverallElapsedTimeMs(unsigned long long Startseconds, unsigned long 
     useconds = Finishuseconds - Startuseconds;
     mtime = ((seconds) * 1000 + useconds / 1000.0) + 0.5;
     *duration = (double)mtime;
-    //printf("\nElapsed time: %3.3ld seconds\n", mtime/1000);
+    //SVT_PRINTF("\nElapsed time: %3.3ld seconds\n", mtime/1000);
 #elif _WIN32 //(WIN_ENCODER_TIMING || WIN_DECODER_TIMING)
     //double  duration;
     *duration = (double)(Finishseconds - Startseconds);
-    //printf("\nElapsed time: %3.3f seconds\n", *duration);
+    //SVT_PRINTF("\nElapsed time: %3.3f seconds\n", *duration);
     (void)(Startuseconds);
     (void)(Finishuseconds);
 #else
