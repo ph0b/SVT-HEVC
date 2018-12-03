@@ -49,25 +49,6 @@ typedef enum EB_ASM {
 /***************************************
 * Generic linked list data structure for passing data into/out from the library
 ***************************************/
-#define       EB_CONFIG_ON_FLY_PIC_QP        219
-
-typedef int   EB_LINKED_LIST_TYPE;
-typedef struct EbLinkedListNode
-{
-	void*                     app;                       // points to an application object this node is associated
-	// with. this is an opaque pointer to the encoder lib, but
-	// releaseCbFncPtr may need to access it.
-	EB_LINKED_LIST_TYPE       type;                      // type of data pointed by "data" member variable
-	unsigned int                    size;                      // size of (data)
-	unsigned char                   passthrough;               // whether this is passthrough data from application
-	void(*releaseCbFncPtr)(struct EbLinkedListNode*); // callback to be executed by encoder when picture reaches end of pipeline, or
-	// when aborting. However, at end of pipeline encoder shall
-	// NOT invoke this callback if passthrough is TRUE (but
-	// still needs to do so when aborting)
-	void                     *data;                      // pointer to application's data
-	struct EbLinkedListNode  *next;                      // pointer to next node (null when last)
-
-} EbLinkedListNode;
 
 #define EB_SLICE        unsigned int
 #define B_SLICE         0
@@ -79,18 +60,28 @@ typedef struct EbLinkedListNode
 
 typedef struct EB_BUFFERHEADERTYPE
 {
+    // EB_BUFFERHEADERTYPE size
     unsigned int nSize;
+    
+    // picture (input or output) buffer 
     unsigned char* pBuffer;
-    unsigned int nAllocLen;
     unsigned int nFilledLen;
-    unsigned int nOffset;
+    unsigned int nAllocLen;
+
+    // pic private data
     void* pAppPrivate;
+
+    // pic timing param
     unsigned int nTickCount;
     signed long long dts;
     signed long long pts;
-    unsigned int nFlags;
+
+    // pic info
     unsigned int qpValue;
     unsigned int sliceType;
+
+    // pic flags
+    unsigned int nFlags;
 } EB_BUFFERHEADERTYPE;
 
 typedef struct EB_COMPONENTTYPE

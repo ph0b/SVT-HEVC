@@ -364,42 +364,6 @@ EB_U64 Log2fHighPrecision(EB_U64 x, EB_U8 precision)
 
 }
 
-
-// concatenate two linked list, and return the pointer to the new concatenated list
-EbLinkedListNode* concatEbLinkedList(EbLinkedListNode* a, EbLinkedListNode* b)
-{
-    if ( a )
-    {
-        while ( a->next )
-        {  a = a->next;  }
-        a->next = b;
-        return a;
-    }
-    else
-    {   return b;  }
-}
-
-// split a linked list
-EbLinkedListNode* splitEbLinkedList(EbLinkedListNode* input, EbLinkedListNode** restLL, EB_BOOL (*predicateFunc)(EbLinkedListNode*))
-{
-    EbLinkedListNode* llTruePtr = (EbLinkedListNode *)EB_NULL;    // list of nodes satifying predicateFunc(node) == TRUE
-    EbLinkedListNode* llRestPtr = (EbLinkedListNode *)EB_NULL;    // list of nodes satifying predicateFunc(node) != TRUE
-
-    while ( input )
-    {
-        EbLinkedListNode* next = input->next;
-        input->next = (EbLinkedListNode *)EB_NULL;
-        if ( predicateFunc(input) )
-        {   llTruePtr = concatEbLinkedList(input, llTruePtr);   }
-        else
-        {   llRestPtr = concatEbLinkedList(input, llRestPtr);   }
-        input = next;
-    }
-
-    *restLL = llRestPtr;
-    return llTruePtr;
-}
-
 static const MiniGopStats_t MiniGopStatsArray[] = {
 
 	//	HierarchicalLevels	StartIndex	EndIndex	Lenght	miniGopIndex	                                

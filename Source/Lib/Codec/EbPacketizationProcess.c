@@ -19,20 +19,6 @@
 #include "EbErrorCodes.h"
 #include "EbTime.h"
 
-static EB_BOOL IsPassthroughData(EbLinkedListNode* dataNode)
-{   return dataNode->passthrough;   }
-
-// Extracts passthrough data from a linked list. The extracted data nodes are removed from the original linked list and
-// returned as a linked list. Does not gaurantee the original order of the nodes.
-static EbLinkedListNode* ExtractPassthroughData(EbLinkedListNode** llPtrPtr)
-{
-    EbLinkedListNode* llRestPtr = NULL;
-    EbLinkedListNode* llPassPtr = splitEbLinkedList(*llPtrPtr, &llRestPtr, IsPassthroughData);
-    *llPtrPtr = llRestPtr;
-    return llPassPtr;
-}
-
-
 EB_ERRORTYPE PacketizationContextCtor(
     PacketizationContext_t **contextDblPtr,
     EbFifo_t                *entropyCodingInputFifoPtr,
@@ -89,8 +75,6 @@ void* PacketizationKernel(void *inputPtr)
        
     EB_SLICE                        sliceType;
     
-    EbLinkedListNode               *appDataLLHeadTempPtr;
-
     for(;;) {
     
         // Get EntropyCoding Results
@@ -123,12 +107,13 @@ void* PacketizationKernel(void *inputPtr)
         outputStreamPtr->nFlags |= (encodeContextPtr->terminatingSequenceFlagReceived == EB_TRUE && pictureControlSetPtr->ParentPcsPtr->decodeOrder == encodeContextPtr->terminatingPictureNumber) ? EB_BUFFERFLAG_EOS : 0;
         EbReleaseMutex(encodeContextPtr->terminatingConditionsMutex);
         outputStreamPtr->nFilledLen = 0;
-        outputStreamPtr->nOffset = 0;
         outputStreamPtr->pts = pictureControlSetPtr->ParentPcsPtr->ebInputPtr->pts;
         outputStreamPtr->dts = pictureControlSetPtr->ParentPcsPtr->decodeOrder - (1 << sequenceControlSetPtr->staticConfig.hierarchicalLevels) + 1;
         outputStreamPtr->sliceType = pictureControlSetPtr->ParentPcsPtr->isUsedAsReferenceFlag ? 
                                      pictureControlSetPtr->ParentPcsPtr->idrFlag ? IDR_SLICE :
                                      pictureControlSetPtr->sliceType : NON_REF_SLICE;
+
+        outputStreamPtr->pAppPrivate = pictureControlSetPtr->ParentPcsPtr->ebInputPtr->pAppPrivate;
         // Get Empty Rate Control Input Tasks
         EbGetEmptyObject(
             contextPtr->rateControlTasksOutputFifoPtr,
@@ -446,39 +431,6 @@ void* PacketizationKernel(void *inputPtr)
 
         // Parsing the linked list and find the user data SEI msgs and code them
         sequenceControlSetPtr->picTimingSei.picStruct = 0;
-        appDataLLHeadTempPtr =  pictureControlSetPtr->ParentPcsPtr->dataLLHeadPtr;
-        while (appDataLLHeadTempPtr != EB_NULL)
-        {
-            switch(appDataLLHeadTempPtr->type){
-
-                case EB_TYPE_UNREG_USER_DATA_SEI:
-                    if(sequenceControlSetPtr->staticConfig.unregisteredUserDataSeiFlag){
-                        EncodeUnregUserDataSEI(
-                            pictureControlSetPtr->bitstreamPtr,
-                            (UnregistedUserData_t*)(appDataLLHeadTempPtr->data),
-                            sequenceControlSetPtr->encodeContextPtr);  
-                    }
-                    break;
-
-                case EB_TYPE_REG_USER_DATA_SEI:
-                    if(sequenceControlSetPtr->staticConfig.registeredUserDataSeiFlag){
-                        EncodeRegUserDataSEI(
-                            pictureControlSetPtr->bitstreamPtr,
-                            (RegistedUserData_t*)(appDataLLHeadTempPtr->data));  
-                    }
-                    break;
-
-                case EB_TYPE_PIC_STRUCT:
-                    sequenceControlSetPtr->picTimingSei.picStruct = *(EB_U32*)(appDataLLHeadTempPtr->data);
-                    break;
-
-                default:
-                    break;
-            }
-
-            appDataLLHeadTempPtr = appDataLLHeadTempPtr->next;
-
-        }
 
         if( sequenceControlSetPtr->staticConfig.bufferingPeriodSEI && 
             pictureControlSetPtr->sliceType == I_SLICE && 
@@ -568,23 +520,6 @@ void* PacketizationKernel(void *inputPtr)
         //Store the buffer in the Queue
         queueEntryPtr->outputStreamWrapperPtr = outputStreamWrapperPtr;               
 
-        // Note: last chance here to add more output meta data for an encoded picture -->
-            
-        // collect output meta data 
-        queueEntryPtr->outMetaData = concatEbLinkedList(ExtractPassthroughData(&(pictureControlSetPtr->ParentPcsPtr->dataLLHeadPtr)),
-                                                        pictureControlSetPtr->ParentPcsPtr->appOutDataLLHeadPtr);
-        pictureControlSetPtr->ParentPcsPtr->appOutDataLLHeadPtr = (EbLinkedListNode *)EB_NULL;
-
-        // Calling callback functions to release the memory allocated for data linked list in the application
-        while (pictureControlSetPtr->ParentPcsPtr->dataLLHeadPtr != EB_NULL){
-        appDataLLHeadTempPtr = pictureControlSetPtr->ParentPcsPtr->dataLLHeadPtr->next;
-        if (pictureControlSetPtr->ParentPcsPtr->dataLLHeadPtr->releaseCbFncPtr != EB_NULL){
-            pictureControlSetPtr->ParentPcsPtr->dataLLHeadPtr->releaseCbFncPtr(pictureControlSetPtr->ParentPcsPtr->dataLLHeadPtr);
-            }
-
-            pictureControlSetPtr->ParentPcsPtr->dataLLHeadPtr = appDataLLHeadTempPtr;
-        }
-
         if (sequenceControlSetPtr->staticConfig.speedControlFlag){
             // update speed control variables
             EbBlockOnMutex(encodeContextPtr->scBufferMutex);
@@ -627,9 +562,7 @@ void* PacketizationKernel(void *inputPtr)
                 &latency);
 
             outputStreamPtr->nTickCount = (EB_U32)latency;
-            outputStreamPtr->pAppPrivate = queueEntryPtr->outMetaData;
 			EbPostFullObject(outputStreamWrapperPtr);
-            queueEntryPtr->outMetaData = (EbLinkedListNode *)EB_NULL;
 
             // Reset the Reorder Queue Entry
             queueEntryPtr->pictureNumber    += PACKETIZATION_REORDER_QUEUE_MAX_DEPTH;            

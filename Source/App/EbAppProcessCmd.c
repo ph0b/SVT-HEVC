@@ -1212,7 +1212,6 @@ APPEXITCONDITIONTYPE ProcessInputBuffer(
         }
 
         // Fill in Buffers Header control data
-        headerPtr->nOffset      = 0;
         headerPtr->pts          = config->processedFrameCount-1;
         headerPtr->sliceType    = INVALID_SLICE;
 
@@ -1231,7 +1230,6 @@ APPEXITCONDITIONTYPE ProcessInputBuffer(
             headerPtr->nFilledLen   = 0;
             headerPtr->nTickCount   = 0;
             headerPtr->pAppPrivate  = NULL;
-            headerPtr->nOffset      = 0;
             headerPtr->nFlags       = EB_BUFFERFLAG_EOS;
             headerPtr->pBuffer      = NULL;
             headerPtr->sliceType    = INVALID_SLICE;
@@ -1319,7 +1317,7 @@ APPEXITCONDITIONTYPE ProcessOutputStreamBuffer(
 
         // Write Stream Data to file
         if (streamFile) {
-            fwrite(headerPtr->pBuffer + headerPtr->nOffset, 1, headerPtr->nFilledLen, streamFile);
+            fwrite(headerPtr->pBuffer, 1, headerPtr->nFilledLen, streamFile);
         }
         config->performanceContext.byteCount += headerPtr->nFilledLen;
 
@@ -1416,7 +1414,7 @@ APPEXITCONDITIONTYPE ProcessOutputReconBuffer(
             frameNum = frameNum - 1;
         }
 
-        fwrite(headerPtr->pBuffer + headerPtr->nOffset, 1, headerPtr->nFilledLen, config->reconFile);
+        fwrite(headerPtr->pBuffer, 1, headerPtr->nFilledLen, config->reconFile);
         
         // Update Output Port Activity State
         return_value = (headerPtr->nFlags & EB_BUFFERFLAG_EOS) ? APP_ExitConditionFinished : APP_ExitConditionNone;

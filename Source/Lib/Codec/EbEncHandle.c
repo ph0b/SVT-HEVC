@@ -3116,7 +3116,6 @@ static void CopyInputBuffer(
     dst->nFilledLen = src->nFilledLen;
     dst->nFlags     = src->nFlags;
     dst->pts        = src->pts;
-    dst->nOffset    = src->nOffset;
     dst->nTickCount = src->nTickCount;
     dst->nSize      = src->nSize;
     dst->qpValue    = src->qpValue;
@@ -3171,7 +3170,6 @@ static void CopyOutputBuffer(
     dst->nSize         = src->nSize;
     dst->nAllocLen     = src->nAllocLen;
     dst->nFilledLen    = src->nFilledLen;
-    dst->nOffset       = src->nOffset;
     dst->pAppPrivate   = src->pAppPrivate;
     dst->nTickCount    = src->nTickCount;
     dst->pts           = src->pts;
@@ -3180,9 +3178,6 @@ static void CopyOutputBuffer(
     dst->sliceType     = src->sliceType;
     if (src->pBuffer)
         EB_MEMCPY(dst->pBuffer, src->pBuffer, src->nFilledLen);
-    if (src->pAppPrivate)
-        EB_MEMCPY(dst->pAppPrivate, src->pAppPrivate, sizeof(EbLinkedListNode));
-
     return;
 }
 
@@ -3195,7 +3190,6 @@ static void CopyOutputReconBuffer(
     dst->nSize = src->nSize;
     dst->nAllocLen = src->nAllocLen;
     dst->nFilledLen = src->nFilledLen;
-    dst->nOffset = src->nOffset;
     dst->pAppPrivate = src->pAppPrivate;
     dst->nTickCount = src->nTickCount;
     dst->pts = src->pts;
@@ -3511,9 +3505,8 @@ EB_ERRORTYPE EbInputBufferHeaderCtor(
         sequenceControlSetPtr,
         inputBuffer);
 #endif
-    // Assign the variables 
-    EB_MALLOC(EbLinkedListNode*, inputBuffer->pAppPrivate, sizeof(EbLinkedListNode), EB_N_PTR);
-    ((EbLinkedListNode*)(inputBuffer->pAppPrivate))->type = EB_FALSE;
+
+    inputBuffer->pAppPrivate = NULL;
 
     return EB_ErrorNone;
 }
@@ -3539,7 +3532,7 @@ EB_ERRORTYPE EbOutputBufferHeaderCtor(
 	EB_MALLOC(EB_U8*, outBufPtr->pBuffer, nStride, EB_N_PTR);
 
 	outBufPtr->nAllocLen =  nStride;
-	outBufPtr->pAppPrivate = 0;// (EB_PTR)callbackData;
+	outBufPtr->pAppPrivate = NULL;
 	
 	    (void)objectInitDataPtr;
 #else

@@ -649,8 +649,6 @@ EB_ERRORTYPE PictureParentControlSetCtor(
 
     objectPtr->lcuTotalCount            = pictureLcuWidth * pictureLcuHeight;
 
-    objectPtr->dataLLHeadPtr = (EbLinkedListNode *)EB_NULL;
-    objectPtr->appOutDataLLHeadPtr = (EbLinkedListNode *)EB_NULL;
 	EB_MALLOC(EB_U16**, objectPtr->variance, sizeof(EB_U16*) * objectPtr->lcuTotalCount, EB_N_PTR);
 	EB_MALLOC(EB_U8**, objectPtr->yMean, sizeof(EB_U8*) * objectPtr->lcuTotalCount, EB_N_PTR);
 	EB_MALLOC(EB_U8**, objectPtr->cbMean, sizeof(EB_U8*) * objectPtr->lcuTotalCount, EB_N_PTR);

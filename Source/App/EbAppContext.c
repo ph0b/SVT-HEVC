@@ -383,7 +383,7 @@ EB_ERRORTYPE AllocateOutputBuffers(
         EB_APP_MALLOC(EB_U8*, callbackData->streamBufferPool->pBuffer, outputStreamBufferSize, EB_N_PTR, EB_ErrorInsufficientResources);
 
         callbackData->streamBufferPool->nAllocLen = outputStreamBufferSize;
-        callbackData->streamBufferPool->pAppPrivate = (EB_PTR)callbackData;
+        callbackData->streamBufferPool->pAppPrivate = NULL;
         callbackData->streamBufferPool->sliceType = INVALID_SLICE;
     }
     return return_error;

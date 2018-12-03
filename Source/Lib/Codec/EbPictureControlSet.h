@@ -472,12 +472,6 @@ typedef struct PictureParentControlSet_s
 	// Average intensity
     EB_U8                                 averageIntensity[3];
 
-    // Data attached to the picture. This includes data passed from the application, or other data the encoder attaches
-    // to the picture.
-    EbLinkedListNode                     *dataLLHeadPtr;
-    // Pointer to data to be passed back to the application when picture encoding is done
-    EbLinkedListNode                     *appOutDataLLHeadPtr;
-
     EbObjectWrapper_t                    *outputStreamWrapperPtr;
 	EB_BOOL							      disableTmvpFlag;
 	// zz cost array
