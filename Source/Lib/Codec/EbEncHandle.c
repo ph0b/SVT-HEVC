@@ -2688,7 +2688,7 @@ EB_ERRORTYPE EbH265EncInitParameter(
     configPtr->improveSharpness = EB_TRUE;
 
     // Bitstream options
-    configPtr->codeVpsSpsPps = 1;
+    configPtr->codeVpsSpsPps = 0;
     configPtr->videoUsabilityInfo = 0;
     configPtr->highDynamicRangeInput = 0;
     configPtr->accessUnitDelimiter = 0;
