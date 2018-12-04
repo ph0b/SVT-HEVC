@@ -560,8 +560,13 @@ extern    EB_U32                   libMutexCount;
     libMallocCount++;     
 #endif
 
-// Used to enable printfs from the library
-#define LIB_PRINTF_ENABLE 0
+// Debug Macros
+#define OVERSHOOT_STAT_PRINT             0  // Do not remove. 
+                                            // For printing overshooting percentages for both RC and fixed QP. 
+                                            // Target rate and and max buffer size should be set properly even for fixed QP.
+                                            // Disabled by default. 
+#define DEADLOCK_DEBUG                   0
+#define LIB_PRINTF_ENABLE                0
 
 #if LIB_PRINTF_ENABLE
 #define SVT_LOG(s, ...) printf((s), __VA_ARGS__)

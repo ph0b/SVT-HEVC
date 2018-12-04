@@ -1117,15 +1117,13 @@ void* InitialRateControlKernel(void *inputPtr)
 						1);
 					//OPTION 1:  get the buffer in resource coordination
 
-#if CHKN_OMX
 					EbGetEmptyObject(
 						sequenceControlSetPtr->encodeContextPtr->streamOutputFifoPtr,
 						&outputStreamWrapperPtr);
 
 					pictureControlSetPtr->outputStreamWrapperPtr = outputStreamWrapperPtr;					
 
-#endif
-					// Get Empty Results Object
+                    // Get Empty Results Object
 					EbGetEmptyObject(
 						contextPtr->initialrateControlResultsOutputFifoPtr,
 						&outputResultsWrapperPtr);

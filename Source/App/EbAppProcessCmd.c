@@ -1215,11 +1215,7 @@ APPEXITCONDITIONTYPE ProcessInputBuffer(
         headerPtr->pts          = config->processedFrameCount-1;
         headerPtr->sliceType    = INVALID_SLICE;
 
-#if CHKN_EOS
         headerPtr->nFlags = 0; 
-#else
-        headerPtr->nFlags |= (contextPtr->processedFrameCount == (EB_U64)config->framesToBeEncoded) || config->stopEncoder ? EB_BUFFERFLAG_EOS : 0;
-#endif
 
         // Send the picture
         EbH265EncSendPicture(componentHandle, headerPtr);
@@ -1350,12 +1346,7 @@ APPEXITCONDITIONTYPE ProcessOutputStreamBuffer(
         fflush(stdout);
 
         // Queue the buffer again if the port is still active
-        if (*portState == APP_PortActive) {
-#if ! CHKN_OMX
-            EbH265EncFillPacket((EB_HANDLETYPE)componentHandle, headerPtr);
-#endif 
-        }
-        else {
+        if (*portState != APP_PortActive) {
             if ((config->framesToBeEncoded < SPEED_MEASUREMENT_INTERVAL) || (config->framesToBeEncoded - startFrame) < SPEED_MEASUREMENT_INTERVAL) {
                 config->performanceContext.averageSpeed = (config->performanceContext.frameCount - startFrame) / duration;
                 config->performanceContext.averageLatency = config->performanceContext.totalLatency / (double)(config->performanceContext.frameCount - startFrame);

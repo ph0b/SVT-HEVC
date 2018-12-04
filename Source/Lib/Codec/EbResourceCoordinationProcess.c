@@ -438,9 +438,8 @@ void* ResourceCoordinationKernel(void *inputPtr)
     EB_BOOL                          is16BitInput;
 
 	EB_U32							inputSize = 0;
-#if CHKN_EOS
-	EbObjectWrapper_t               * prevPictureControlSetWrapperPtr = 0;
-#endif
+	EbObjectWrapper_t              *prevPictureControlSetWrapperPtr = 0;
+    
     for(;;) {
 
         // Tie instanceIndex to zero for now...
@@ -583,7 +582,6 @@ void* ResourceCoordinationKernel(void *inputPtr)
         inputPictureWrapperPtr  = 0;
         inputPicturePtr         = 0;
 
-#if ONE_MEMCPY 
         // assign the input picture
         pictureControlSetPtr->enhancedPicturePtr = (EbPictureBufferDesc_t*)ebInputPtr->pBuffer;
         // start latency measure as soon as we copy input picture from buffer
@@ -591,7 +589,6 @@ void* ResourceCoordinationKernel(void *inputPtr)
         pictureControlSetPtr->startTimeuSeconds = 0;
 
         StartTime((unsigned long long*)&pictureControlSetPtr->startTimeSeconds, (unsigned long long*)&pictureControlSetPtr->startTimeuSeconds);
-#endif
 
         inputPicturePtr = pictureControlSetPtr->enhancedPicturePtr;
 
@@ -625,10 +622,6 @@ void* ResourceCoordinationKernel(void *inputPtr)
         pictureControlSetPtr->sequenceControlSetWrapperPtr    = contextPtr->sequenceControlSetActiveArray[instanceIndex];
         pictureControlSetPtr->inputPictureWrapperPtr          = inputPictureWrapperPtr;
 
-#if ! CHKN_EOS
-        pictureControlSetPtr->endOfSequenceFlag               = endOfSequenceFlag;
-#endif
-            
         // Set Picture Control Flags
         pictureControlSetPtr->idrFlag                         = sequenceControlSetPtr->encodeContextPtr->initialPicture || (ebInputPtr->sliceType == IDR_SLICE);
         pictureControlSetPtr->craFlag                         = (ebInputPtr->sliceType == I_SLICE) ? EB_TRUE : EB_FALSE;
@@ -720,7 +713,6 @@ void* ResourceCoordinationKernel(void *inputPtr)
         ((EbPaReferenceObject_t*)pictureControlSetPtr->paReferencePictureWrapperPtr->objectPtr)->inputPaddedPicturePtr->bufferY = inputPicturePtr->bufferY;
 
         // Get Empty Output Results Object
-#if CHKN_EOS
 		if (pictureControlSetPtr->pictureNumber > 0)
 		{
 			((PictureParentControlSet_t       *)prevPictureControlSetWrapperPtr->objectPtr)->endOfSequenceFlag = endOfSequenceFlag;
@@ -737,16 +729,7 @@ void* ResourceCoordinationKernel(void *inputPtr)
 		}
 
 		prevPictureControlSetWrapperPtr = pictureControlSetWrapperPtr;
-#else
-			EbGetEmptyObject(
-				contextPtr->resourceCoordinationResultsOutputFifoPtr,
-				&outputWrapperPtr);
-			outputResultsPtr = (ResourceCoordinationResults_t*)outputWrapperPtr->objectPtr;
-			outputResultsPtr->pictureControlSetWrapperPtr = pictureControlSetWrapperPtr;
 
-			// Post the finished Results Object
-			EbPostFullObject(outputWrapperPtr);
-#endif
 
 
 #if DEADLOCK_DEBUG

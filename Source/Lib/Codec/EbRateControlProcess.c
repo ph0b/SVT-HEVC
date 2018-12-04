@@ -2720,10 +2720,8 @@ void* RateControlKernel(void *inputPtr)
 
 			// Release the SequenceControlSet
 			EbReleaseObject(parentPictureControlSetPtr->sequenceControlSetWrapperPtr);
-#if ONE_MEMCPY 
             // Release the input buffer
             EbReleaseObject(parentPictureControlSetPtr->ebInputWrapperPtr);
-#endif		
             // Release the ParentPictureControlSet
 			EbReleaseObject(rateControlTasksPtr->pictureControlSetWrapperPtr);
 

@@ -1128,11 +1128,7 @@ EB_API EB_ERRORTYPE EbInitEncoder(EB_COMPONENTTYPE *h265EncComponent)
 
     // Output Buffer Fifo Ptrs
     for(instanceIndex=0; instanceIndex < encHandlePtr->encodeInstanceTotalCount; ++instanceIndex) {
-#if CHKN_OMX
 		encHandlePtr->sequenceControlSetInstanceArray[instanceIndex]->encodeContextPtr->streamOutputFifoPtr  = (encHandlePtr->outputStreamBufferProducerFifoPtrDblArray[instanceIndex])[0];
-#else
-        encHandlePtr->sequenceControlSetInstanceArray[instanceIndex]->encodeContextPtr->streamOutputFifoPtr  = (encHandlePtr->outputStreamBufferConsumerFifoPtrDblArray[instanceIndex])[0];
-#endif
         if (encHandlePtr->sequenceControlSetInstanceArray[0]->sequenceControlSetPtr->staticConfig.reconEnabled) {
             encHandlePtr->sequenceControlSetInstanceArray[instanceIndex]->encodeContextPtr->reconOutputFifoPtr = (encHandlePtr->outputReconBufferProducerFifoPtrDblArray[instanceIndex])[0];
         }
@@ -2919,73 +2915,6 @@ EB_API EB_ERRORTYPE EbH265EncEosNal(
 **** Copy the input buffer from the 
 **** sample application to the library buffers
 ************************************************/
-#if !ONE_MEMCPY
-EB_ERRORTYPE CopyFrameBuffer(
-    SequenceControlSet_t        *sequenceControlSet,
-    EB_U8      			        *dst,
-    EB_U8      			        *src)
-{
-    EB_H265_ENC_CONFIGURATION   *config = &sequenceControlSet->staticConfig;
-    EB_ERRORTYPE   return_error = EB_ErrorNone;
-    const int tenBitPackedMode = (config->encoderBitDepth > 8) && (config->compressedTenBitFormat == 0) ? 1 : 0;
-
-    // Determine size of each plane
-    const size_t luma8bitSize =
-        config->sourceWidth    *
-        config->sourceHeight   *
-        (1 << tenBitPackedMode);
-
-    const size_t chroma8bitSize = luma8bitSize >> 2;
-    const size_t luma10bitSize = (config->encoderBitDepth > 8 && tenBitPackedMode == 0) ? (luma8bitSize >> 2) : 0;
-    const size_t chroma10bitSize = (config->encoderBitDepth > 8 && tenBitPackedMode == 0) ? (luma10bitSize >> 2) : 0;
-
-    // Determine  
-    EB_H265_ENC_INPUT* inputPtr     = (EB_H265_ENC_INPUT*)src;
-    EB_H265_ENC_INPUT* libInputPtr  = (EB_H265_ENC_INPUT*)dst;
-    if (luma8bitSize) {
-        EB_MEMCPY(libInputPtr->luma, inputPtr->luma, luma8bitSize);
-    }
-    else {
-        libInputPtr->luma = 0;
-    }
-    if (chroma8bitSize) {
-        EB_MEMCPY(libInputPtr->cb, inputPtr->cb, chroma8bitSize);
-    }
-    else {
-        libInputPtr->cb = 0;
-    }
-
-    if (chroma8bitSize) {
-        EB_MEMCPY(libInputPtr->cr, inputPtr->cr, chroma8bitSize);
-    }
-    else {
-        libInputPtr->cr = 0;
-    }
-
-    if (luma10bitSize) {
-        EB_MEMCPY(libInputPtr->lumaExt, inputPtr->lumaExt, luma10bitSize);
-    }
-    else {
-        libInputPtr->lumaExt = 0;
-    }
-
-    if (chroma10bitSize) {
-        EB_MEMCPY(libInputPtr->cbExt, inputPtr->cbExt, chroma10bitSize);
-    }
-    else {
-        libInputPtr->cbExt = 0;
-    }
-
-    if (chroma10bitSize) {
-        EB_MEMCPY(libInputPtr->crExt, inputPtr->crExt, chroma10bitSize);
-    }
-    else {
-        libInputPtr->crExt = 0;
-    }
-
-    return return_error;
-}
-#else
 static EB_ERRORTYPE CopyFrameBuffer(
     SequenceControlSet_t        *sequenceControlSetPtr,
     EB_U8      			        *dst,
@@ -3151,7 +3080,6 @@ static EB_ERRORTYPE CopyFrameBuffer(
     }
     return return_error;
 }
-#endif
 static void CopyInputBuffer(
     SequenceControlSet_t*    sequenceControlSet,
     EB_BUFFERHEADERTYPE*     dst,
@@ -3170,12 +3098,7 @@ static void CopyInputBuffer(
 
     // Copy the picture buffer
     if(src->pBuffer != NULL)
-#if ONE_MEMCPY
         CopyFrameBuffer(sequenceControlSet, dst->pBuffer, src->pBuffer);
-#else
-        CopyFrameBuffer(sequenceControlSet, dst->pBuffer, src->pBuffer);
-#endif
-    
 }
 
 /**********************************
@@ -3387,8 +3310,22 @@ EB_ERRORTYPE InitH265EncoderHandle(
     EB_ERRORTYPE       return_error            = EB_ErrorNone;
     EB_COMPONENTTYPE  *h265EncComponent        = (EB_COMPONENTTYPE*) hComponent;
 
-    SVT_LOG("LIB Build date: %s %s\n",__DATE__,__TIME__);
-    SVT_LOG("-------------------------------------\n");
+    printf("-------------------------------------------\n");
+    printf("SVT [version]:\tSVT-HEVC Encoder  v%d.%d\n", SVT_VERSION_MAJOR, SVT_VERSION_MINOR);
+#if ( defined( _MSC_VER ) && (_MSC_VER < 1910) ) 
+    printf("SVT [build]: Visual Studio 2013");
+#elif ( defined( _MSC_VER ) && (_MSC_VER >= 1910) ) 
+    printf("SVT [build]:\tVisual Studio 2017");
+#elif defined(__GNUC__)
+    printf("SVT [build]:\tGCC %d\t", __GNUC__);
+#else
+    printf("SVT [build]:\tunknown compiler");
+#endif
+    printf(" %u bit\n", (unsigned) sizeof(void*) * 8);
+    printf("LIB Build date: %s %s\n",__DATE__,__TIME__);
+    printf("-------------------------------------------\n");
+    printf("\n");
+
     
     SwitchToRealTime();
 
@@ -3402,7 +3339,6 @@ EB_ERRORTYPE InitH265EncoderHandle(
     
     return return_error;
 }
-#if ONE_MEMCPY
 EB_ERRORTYPE AllocateFrameBuffer(
     SequenceControlSet_t       *sequenceControlSetPtr,
     EB_BUFFERHEADERTYPE        *inputBuffer)
@@ -3454,77 +3390,7 @@ EB_ERRORTYPE AllocateFrameBuffer(
 
     return return_error;
 }
-#else
-EB_ERRORTYPE AllocateFrameBuffer(
-    EB_H265_ENC_CONFIGURATION   * config,
-    EB_BUFFERHEADERTYPE       	* inputBuffer)
-{
-    EB_ERRORTYPE   return_error = EB_ErrorNone;
 
-    const int tenBitPackedMode = (config->encoderBitDepth > 8) && (config->compressedTenBitFormat == 0) ? 1 : 0;
-
-    // Determine size of each plane
-    const size_t luma8bitSize =
-
-        config->sourceWidth    *
-        config->sourceHeight   *
-
-        (1 << tenBitPackedMode);
-
-    const size_t chroma8bitSize = luma8bitSize >> 2;
-    const size_t luma10bitSize = (config->encoderBitDepth > 8 && tenBitPackedMode == 0) ? (luma8bitSize >> 2) : 0;
-    const size_t chroma10bitSize = (config->encoderBitDepth > 8 && tenBitPackedMode == 0) ? (luma10bitSize >> 2) : 0;
-
-    EB_MALLOC(EB_U8*, inputBuffer->pBuffer, sizeof(EB_H265_ENC_INPUT), EB_N_PTR);
-
-    // Determine  
-    EB_H265_ENC_INPUT* inputPtr = (EB_H265_ENC_INPUT*)inputBuffer->pBuffer;
-
-    if (luma8bitSize) {
-        EB_MALLOC(unsigned char*, inputPtr->luma, luma8bitSize, EB_N_PTR);
-    }
-    else {
-        inputPtr->luma = 0;
-    }
-    if (chroma8bitSize) {
-        EB_MALLOC(unsigned char*, inputPtr->cb, chroma8bitSize, EB_N_PTR);
-    }
-    else {
-        inputPtr->cb = 0;
-    }
-
-    if (chroma8bitSize) {
-        EB_MALLOC(unsigned char*, inputPtr->cr, chroma8bitSize, EB_N_PTR);
-    }
-    else {
-        inputPtr->cr = 0;
-    }
-
-    if (luma10bitSize) {
-        EB_MALLOC(unsigned char*, inputPtr->lumaExt, luma10bitSize, EB_N_PTR);
-    }
-    else {
-        inputPtr->lumaExt = 0;
-    }
-
-    if (chroma10bitSize) {
-        EB_MALLOC(unsigned char*, inputPtr->cbExt, chroma10bitSize, EB_N_PTR);
-    }
-    else {
-        inputPtr->cbExt = 0;
-    }
-
-    if (chroma10bitSize) {
-        EB_MALLOC(unsigned char*, inputPtr->crExt, chroma10bitSize, EB_N_PTR);
-
-    }
-    else {
-        inputPtr->crExt = 0;
-    }
-
-    return return_error;
-}
-#endif
 
 /**************************************
 * EB_BUFFERHEADERTYPE Constructor
@@ -3535,23 +3401,14 @@ EB_ERRORTYPE EbInputBufferHeaderCtor(
 {
     EB_BUFFERHEADERTYPE* inputBuffer;
     SequenceControlSet_t        *sequenceControlSetPtr = (SequenceControlSet_t*)objectInitDataPtr;
-#if !ONE_MEMCPY 
-    EB_H265_ENC_CONFIGURATION   *config = &sequenceControlSetPtr->staticConfig;
-#endif
     EB_MALLOC(EB_BUFFERHEADERTYPE*, inputBuffer, sizeof(EB_BUFFERHEADERTYPE), EB_N_PTR);
     *objectDblPtr = (EB_PTR)inputBuffer;
     // Initialize Header
     inputBuffer->nSize = sizeof(EB_BUFFERHEADERTYPE);
-#if !ONE_MEMCPY 
-    // Allocate frame buffer for the pBuffer
-    AllocateFrameBuffer(
-        config,
-        inputBuffer);
-#else
+    
     AllocateFrameBuffer(
         sequenceControlSetPtr,
         inputBuffer);
-#endif
 
     inputBuffer->pAppPrivate = NULL;
 
@@ -3565,7 +3422,6 @@ EB_ERRORTYPE EbOutputBufferHeaderCtor(
     EB_PTR *objectDblPtr, 
     EB_PTR objectInitDataPtr) 
 {
-#if CHKN_OMX
     EB_H265_ENC_CONFIGURATION   * config = (EB_H265_ENC_CONFIGURATION*)objectInitDataPtr;
     EB_U32 nStride = (EB_U32)(EB_OUTPUTSTREAMBUFFERSIZE_MACRO(config->sourceWidth * config->sourceHeight));  //TBC
 	EB_BUFFERHEADERTYPE* outBufPtr;
@@ -3582,13 +3438,7 @@ EB_ERRORTYPE EbOutputBufferHeaderCtor(
 	outBufPtr->pAppPrivate = NULL;
 	
 	    (void)objectInitDataPtr;
-#else
-    *objectDblPtr = (EB_PTR)EB_NULL;
-    objectInitDataPtr = (EB_PTR)EB_NULL;
 
-    (void)objectDblPtr;
-    (void)objectInitDataPtr;
-#endif
     return EB_ErrorNone;
 }
 
