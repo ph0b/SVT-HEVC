@@ -498,7 +498,7 @@ void* PacketizationKernel(void *inputPtr)
         pictureControlSetPtr->ParentPcsPtr->totalNumBits = outputStreamPtr->nFilledLen << 3;    
 
         // Code EOS NUT
-        if (outputStreamPtr->nFlags & EB_BUFFERFLAG_EOS) 
+        if (outputStreamPtr->nFlags & EB_BUFFERFLAG_EOS && sequenceControlSetPtr->staticConfig.codeEosNal == 1) 
         {
             // Reset the bitstream
             ResetBitstream(pictureControlSetPtr->bitstreamPtr->outputBitstreamPtr);

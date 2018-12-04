@@ -1321,6 +1321,21 @@ APPEXITCONDITIONTYPE ProcessOutputStreamBuffer(
         }
         config->performanceContext.byteCount += headerPtr->nFilledLen;
 
+        if ((headerPtr->nFlags & EB_BUFFERFLAG_EOS) && appCallBack->ebEncParameters.codeEosNal == 0) {
+            headerPtr->nFilledLen = 0;
+            stream_status = EbH265EncEosNal(componentHandle, headerPtr);
+            if (stream_status == EB_ErrorMax) {
+                printf("\n");
+                LogErrorOutput(
+                    config->errorLogFile,
+                    headerPtr->nFlags);
+                return APP_ExitConditionError;
+            }
+            else if (stream_status != EB_NoErrorEmptyQueue) {
+                fwrite(headerPtr->pBuffer, 1, headerPtr->nFilledLen, streamFile);
+            }
+            config->performanceContext.byteCount += headerPtr->nFilledLen;
+        }
         // Update Output Port Activity State
         *portState = (headerPtr->nFlags & EB_BUFFERFLAG_EOS) ? APP_PortInactive : *portState;
         return_value = (headerPtr->nFlags & EB_BUFFERFLAG_EOS) ? APP_ExitConditionFinished : APP_ExitConditionNone;

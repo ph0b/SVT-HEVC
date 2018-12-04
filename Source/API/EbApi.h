@@ -215,9 +215,13 @@ typedef struct EB_H265_ENC_CONFIGURATION
 
     unsigned char               tune;
 
-	unsigned char				bitRateReduction;
-    // Tresholds
+    // Visual quality optimizations 
+    unsigned char             bitRateReduction;
     unsigned char             improveSharpness;
+
+    // bitstream options
+    unsigned char             codeVpsSpsPps;
+    unsigned char             codeEosNal;
     unsigned int              videoUsabilityInfo;
     unsigned int              highDynamicRangeInput;
     unsigned int              accessUnitDelimiter;
@@ -231,16 +235,14 @@ typedef struct EB_H265_ENC_CONFIGURATION
     unsigned int              tier;
     unsigned int              level;
 
-    // Debug tools
-    unsigned int              reconEnabled;
-
     signed int                injectorFrameRate;
     unsigned int              speedControlFlag;
-    
+
     // ASM Type
     EB_ASM			          asmType;
 
-    unsigned char             codeVpsSpsPps;
+    // Debug tools
+    unsigned int              reconEnabled;
 
 } EB_H265_ENC_CONFIGURATION;
 
@@ -255,6 +257,10 @@ EB_API EB_ERRORTYPE EbH265EncSetParameter(
     EB_H265_ENC_CONFIGURATION  *pComponentParameterStructure);
 
 EB_API EB_ERRORTYPE EbH265EncStreamHeader(
+    EB_COMPONENTTYPE           *h265EncComponent,
+    EB_BUFFERHEADERTYPE*        outputStreamPtr);
+
+EB_API EB_ERRORTYPE EbH265EncEosNal(
     EB_COMPONENTTYPE           *h265EncComponent,
     EB_BUFFERHEADERTYPE*        outputStreamPtr);
 

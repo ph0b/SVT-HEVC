@@ -27,6 +27,7 @@ extern "C" {
 
 #define SEGMENT_ENTROPY_BUFFER_SIZE         0x989680// Entropy Bitstream Buffer Size
 #define PACKETIZATION_PROCESS_BUFFER_SIZE   0x001000 // Bitstream used to code SPS, PPS, etc.
+#define EOS_NAL_BUFFER_SIZE                 0x0010 // Bitstream used to code EOS NAL
 #define HISTOGRAM_NUMBER_OF_BINS            256  
 #define MAX_NUMBER_OF_REGIONS_IN_WIDTH		4
 #define MAX_NUMBER_OF_REGIONS_IN_HEIGHT		4

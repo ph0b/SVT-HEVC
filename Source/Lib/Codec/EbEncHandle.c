@@ -1920,6 +1920,8 @@ void CopyApiFromApp(
     sequenceControlSetPtr->staticConfig.tune = ((EB_H265_ENC_CONFIGURATION*)pComponentParameterStructure)->tune;
     sequenceControlSetPtr->staticConfig.encMode = ((EB_H265_ENC_CONFIGURATION*)pComponentParameterStructure)->encMode;
     sequenceControlSetPtr->staticConfig.codeVpsSpsPps = ((EB_H265_ENC_CONFIGURATION*)pComponentParameterStructure)->codeVpsSpsPps;
+    sequenceControlSetPtr->staticConfig.codeEosNal = ((EB_H265_ENC_CONFIGURATION*)pComponentParameterStructure)->codeEosNal;
+    
     if (sequenceControlSetPtr->staticConfig.tune == 1) {
         sequenceControlSetPtr->staticConfig.bitRateReduction = 0;
         sequenceControlSetPtr->staticConfig.improveSharpness = 0;
@@ -2689,6 +2691,8 @@ EB_ERRORTYPE EbH265EncInitParameter(
 
     // Bitstream options
     configPtr->codeVpsSpsPps = 0;
+    configPtr->codeEosNal    = 1;
+
     configPtr->videoUsabilityInfo = 0;
     configPtr->highDynamicRangeInput = 0;
     configPtr->accessUnitDelimiter = 0;
@@ -2866,6 +2870,49 @@ EB_API EB_ERRORTYPE EbH265EncStreamHeader(
 
     return return_error;
 }
+
+#if __linux
+__attribute__((visibility("default")))
+#endif
+EB_API EB_ERRORTYPE EbH265EncEosNal(
+    EB_COMPONENTTYPE           *h265EncComponent,
+    EB_BUFFERHEADERTYPE*        outputStreamPtr
+)
+{
+    EB_ERRORTYPE           return_error = EB_ErrorNone;
+    EbEncHandle_t          *pEncCompData = (EbEncHandle_t*)h265EncComponent->pComponentPrivate;
+    Bitstream_t            *bitstreamPtr;
+    SequenceControlSet_t  *sequenceControlSetPtr = pEncCompData->sequenceControlSetInstanceArray[0]->sequenceControlSetPtr;
+    EncodeContext_t        *encodeContextPtr = sequenceControlSetPtr->encodeContextPtr;
+
+    EB_MALLOC(Bitstream_t*, bitstreamPtr, sizeof(Bitstream_t), EB_N_PTR);
+    EB_MALLOC(OutputBitstreamUnit_t*, bitstreamPtr->outputBitstreamPtr, sizeof(OutputBitstreamUnit_t), EB_N_PTR);
+
+    return_error = OutputBitstreamUnitCtor(
+        (OutputBitstreamUnit_t*)bitstreamPtr->outputBitstreamPtr,
+        EOS_NAL_BUFFER_SIZE);
+
+    // Reset the bitstream before writing to it
+    ResetBitstream(
+        (OutputBitstreamUnit_t*)bitstreamPtr->outputBitstreamPtr);
+
+    CodeEndOfSequenceNalUnit(bitstreamPtr);
+
+    // Flush the Bitstream
+    FlushBitstream(
+        bitstreamPtr->outputBitstreamPtr);
+
+    // Copy SPS & PPS to the Output Bitstream
+    CopyRbspBitstreamToPayload(
+        bitstreamPtr,
+        outputStreamPtr->pBuffer,
+        (EB_U32*) &(outputStreamPtr->nFilledLen),
+        (EB_U32*) &(outputStreamPtr->nAllocLen),
+        encodeContextPtr);
+
+    return return_error;
+}
+
 
 
 /***********************************************
