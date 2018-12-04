@@ -513,9 +513,14 @@ void* ResourceCoordinationKernel(void *inputPtr)
                 }
 
                 vuiPtr->vuiTimingInfoPresentFlag        = EB_TRUE;
-                
-                vuiPtr->vuiTimeScale = (sequenceControlSetPtr->staticConfig.frameRate) ;
-                vuiPtr->vuiNumUnitsInTick = 1<<16;
+                if (sequenceControlSetPtr->staticConfig.frameRateDenominator != 0 && sequenceControlSetPtr->staticConfig.frameRateNumerator != 0) {
+                    vuiPtr->vuiTimeScale = (sequenceControlSetPtr->staticConfig.frameRateNumerator);
+                    vuiPtr->vuiNumUnitsInTick = sequenceControlSetPtr->staticConfig.frameRateDenominator;
+                }
+                else {
+                    vuiPtr->vuiTimeScale = (sequenceControlSetPtr->staticConfig.frameRate) > 1000 ? (sequenceControlSetPtr->staticConfig.frameRate) : (sequenceControlSetPtr->staticConfig.frameRate)<<16;
+                    vuiPtr->vuiNumUnitsInTick = 1 << 16;                
+                }
                     
             }
             // Get empty SequenceControlSet [BLOCKING]
