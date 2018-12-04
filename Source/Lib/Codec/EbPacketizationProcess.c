@@ -86,7 +86,7 @@ void* PacketizationKernel(void *inputPtr)
         sequenceControlSetPtr   = (SequenceControlSet_t*)   pictureControlSetPtr->sequenceControlSetWrapperPtr->objectPtr;
         encodeContextPtr        = (EncodeContext_t*)        sequenceControlSetPtr->encodeContextPtr;
 #if DEADLOCK_DEBUG
-        SVT_PRINTF_2("POC %lld PK IN \n", pictureControlSetPtr->pictureNumber);
+        SVT_LOG("POC %lld PK IN \n", pictureControlSetPtr->pictureNumber);
 #endif
         //****************************************************
         // Input Entropy Results into Reordering Queue
@@ -245,7 +245,7 @@ void* PacketizationKernel(void *inputPtr)
                     EbBlockOnMutex(sequenceControlSetPtr->encodeContextPtr->rateTableUpdateMutex);
                     {
                         if(pictureControlSetPtr->sliceType == I_SLICE){   
-                         //   SVT_PRINTF_2("Update After: %d\n", pictureControlSetPtr->pictureNumber);
+                         //   SVT_LOG("Update After: %d\n", pictureControlSetPtr->pictureNumber);
                             if (sequenceControlSetPtr->inputResolution < INPUT_SIZE_4K_RANGE){
                                 for (sadIntervalIndex = 0; sadIntervalIndex < NUMBER_OF_INTRA_SAD_INTERVALS; sadIntervalIndex++){
                                     if (count[sadIntervalIndex] > (5 * 64 * 64 / blkSize / blkSize)){
@@ -577,7 +577,7 @@ void* PacketizationKernel(void *inputPtr)
 
         }
 #if DEADLOCK_DEBUG
-        SVT_PRINTF_2("POC %lld PK OUT \n", pictureControlSetPtr->pictureNumber);
+        SVT_LOG("POC %lld PK OUT \n", pictureControlSetPtr->pictureNumber);
 #endif     
     }
 return EB_NULL;

@@ -689,7 +689,7 @@ void* ResourceCoordinationKernel(void *inputPtr)
         pictureControlSetPtr->pictureNumber                   = contextPtr->pictureNumberArray[instanceIndex]++;
 
 #if DEADLOCK_DEBUG
-        SVT_PRINTF_2("POC %lld RESCOOR IN \n", pictureControlSetPtr->pictureNumber);
+        SVT_LOG("POC %lld RESCOOR IN \n", pictureControlSetPtr->pictureNumber);
 #endif    
         // Set the picture structure: 0: progressive, 1: top, 2: bottom
         pictureControlSetPtr->pictStruct = sequenceControlSetPtr->interlacedVideo == EB_FALSE ? 
@@ -750,7 +750,7 @@ void* ResourceCoordinationKernel(void *inputPtr)
 
 
 #if DEADLOCK_DEBUG
-        SVT_PRINTF_2("POC %lld RESCOOR OUT \n", pictureControlSetPtr->pictureNumber);
+        SVT_LOG("POC %lld RESCOOR OUT \n", pictureControlSetPtr->pictureNumber);
 #endif
 
     }
