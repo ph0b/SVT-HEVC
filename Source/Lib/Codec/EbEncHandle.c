@@ -1635,7 +1635,7 @@ void LoadDefaultBufferConfigurationSettings(
     sequenceControlSetPtr->totalProcessInitCount += sequenceControlSetPtr->entropyCodingProcessInitCount                = MAX(3, coreCount / 12);
 
     sequenceControlSetPtr->totalProcessInitCount += 6; // single processes count
-    SVT_LOG("Number of cores available: %u\nNumber of PPCS %u\n", coreCount >> 1 , inputPic);
+    SVT_LOG("Number of logical cores available: %u\nNumber of PPCS %u\n", coreCount, inputPic);
 
     return;
 
@@ -2687,7 +2687,7 @@ EB_ERRORTYPE EbH265EncInitParameter(
 
     // Bitstream options
     configPtr->codeVpsSpsPps = 0;
-    configPtr->codeEosNal    = 1;
+    configPtr->codeEosNal    = 0;
 
     configPtr->videoUsabilityInfo = 0;
     configPtr->highDynamicRangeInput = 0;
@@ -2722,7 +2722,37 @@ EB_ERRORTYPE EbH265EncInitParameter(
 
     return return_error;
 }
+static void PrintLibParams(EB_H265_ENC_CONFIGURATION*   config) {
 
+    SVT_LOG("------------------------------------------- ");
+    if (config->profile == 0)
+        SVT_LOG("\nSVT [config]: Main Profile,Tier %d,Level%.1f\t", config->tier, (float)(config->level / 10));
+    else
+        SVT_LOG("\nSVT [config]: Main10 Profile,Tier %d,Level %.1f\t", config->tier, (float)(config->level / 10));
+
+    SVT_LOG("\nSVT [config]: EncoderMode / LatencyMode / Tune\t\t\t\t: %d / %d / %d ", config->encMode, config->latencyMode, config->tune);
+    SVT_LOG("\nSVT [config]: EncoderBitDepth / CompressedTenBitFormat\t\t\t: %d / %d ", config->encoderBitDepth, config->compressedTenBitFormat);
+    SVT_LOG("\nSVT [config]: SourceWidth / SourceHeight\t\t\t\t: %d / %d ", config->sourceWidth, config->sourceHeight);
+    if (config->frameRateDenominator != 0 && config->frameRateNumerator != 0)
+        SVT_LOG("\nSVT [config]: FrameRateNumerator / FrameRateDenominator / Gop Size / IntraRefreshType \t\t\t\t\t: %d / %d / %d / %d", config->frameRateNumerator > 1000 ? config->frameRateNumerator : config->frameRateNumerator,
+            config->frameRateDenominator > 1000 ? config->frameRateDenominator : config->frameRateDenominator,
+            config->intraPeriodLength + 1,
+            config->intraRefreshType);
+    else
+        SVT_LOG("\nSVT [config]: FrameRate / Gop Size\t\t\t\t\t: %d / %d ", config->frameRate > 1000 ? config->frameRate >> 16 : config->frameRate, config->intraPeriodLength + 1);
+    SVT_LOG("\nSVT [config]: HierarchicalLevels / BaseLayerSwitchMode / PredStructure\t: %d / %d / %d ", config->hierarchicalLevels, config->baseLayerSwitchMode, config->predStructure);
+    if (config->rateControlMode == 1)
+        SVT_LOG("\nSVT [config]: RCMode / TargetBitrate / LookaheadDistance / SceneChangeDetection\t: VBR / %d / %d / %d ", config->targetBitRate, config->lookAheadDistance, config->sceneChangeDetection);
+    else
+        SVT_LOG("\nSVT [config]: BRC Mode / QP  / LookaheadDistance / SceneChangeDetection\t: CQP / %d / %d / %d ", config->qp, config->lookAheadDistance, config->sceneChangeDetection);
+
+    if (config->tune == 0)
+        SVT_LOG("\nSVT [config]: BitRateReduction / ImproveSharpness\t\t\t: %d / %d ", config->bitRateReduction, config->improveSharpness);
+    SVT_LOG("\n------------------------------------------- ");
+    SVT_LOG("\n");
+
+    fflush(stdout);
+}
 /**********************************
 
  * Set Parameter
@@ -2776,6 +2806,9 @@ EB_API EB_ERRORTYPE EbH265EncSetParameter(
 
     LoadDefaultBufferConfigurationSettings(
         pEncCompData->sequenceControlSetInstanceArray[instanceIndex]->sequenceControlSetPtr);
+
+    PrintLibParams(
+        &pEncCompData->sequenceControlSetInstanceArray[instanceIndex]->sequenceControlSetPtr->staticConfig);
 
     // Release Config Mutex
     EbReleaseMutex(pEncCompData->sequenceControlSetInstanceArray[instanceIndex]->configMutex);
@@ -3310,23 +3343,20 @@ EB_ERRORTYPE InitH265EncoderHandle(
     EB_ERRORTYPE       return_error            = EB_ErrorNone;
     EB_COMPONENTTYPE  *h265EncComponent        = (EB_COMPONENTTYPE*) hComponent;
 
-    printf("-------------------------------------------\n");
-    printf("SVT [version]:\tSVT-HEVC Encoder  v%d.%d\n", SVT_VERSION_MAJOR, SVT_VERSION_MINOR);
+    printf("SVT [version]:\tSVT-HEVC Encoder Lib v%d.%d.%d\n", SVT_VERSION_MAJOR, SVT_VERSION_MINOR,SVT_VERSION_PATCHLEVEL);
 #if ( defined( _MSC_VER ) && (_MSC_VER < 1910) ) 
-    printf("SVT [build]: Visual Studio 2013");
+    printf("SVT [build]  : Visual Studio 2013");
 #elif ( defined( _MSC_VER ) && (_MSC_VER >= 1910) ) 
-    printf("SVT [build]:\tVisual Studio 2017");
+    printf("SVT [build]  :\tVisual Studio 2017");
 #elif defined(__GNUC__)
-    printf("SVT [build]:\tGCC %d\t", __GNUC__);
+    printf("SVT [build]  :\tGCC %d.%d.%d\t", __GNUC__, __GNUC_MINOR__, __GNUC_PATCHLEVEL__);
 #else
-    printf("SVT [build]:\tunknown compiler");
+    printf("SVT [build]  :\tunknown compiler");
 #endif
     printf(" %u bit\n", (unsigned) sizeof(void*) * 8);
     printf("LIB Build date: %s %s\n",__DATE__,__TIME__);
     printf("-------------------------------------------\n");
-    printf("\n");
-
-    
+   
     SwitchToRealTime();
 
     // Set Component Size & Version

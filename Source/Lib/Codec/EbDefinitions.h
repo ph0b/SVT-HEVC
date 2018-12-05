@@ -31,6 +31,8 @@ extern "C" {
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #pragma GCC diagnostic ignored "-Wuninitialized"
 #pragma GCC diagnostic ignored "-Wunused-function"
+#pragma GCC diagnostic ignored "-Wformat-zero-length"
+#pragma GCC diagnostic ignored "-Wimplicit-fallthrough="
 #endif 
 
 #ifdef __GNUC__
@@ -566,12 +568,16 @@ extern    EB_U32                   libMutexCount;
                                             // Target rate and and max buffer size should be set properly even for fixed QP.
                                             // Disabled by default. 
 #define DEADLOCK_DEBUG                   0
-#define LIB_PRINTF_ENABLE                0
+#define LIB_PRINTF_ENABLE                1
 
 #if LIB_PRINTF_ENABLE
-#define SVT_LOG(s, ...) printf((s), __VA_ARGS__)
+#define SVT_LOG printf
 #else
+#if _MSC_VER
 #define SVT_LOG(s, ...) printf("")
+#else
+#define SVT_LOG(s, ...) printf("",##__VA_ARGS__)
+#endif
 #endif
 
 #define EB_MEMORY() \

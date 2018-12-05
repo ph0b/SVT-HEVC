@@ -15,8 +15,9 @@ extern "C" {
 #endif // __cplusplus
 
 // API Version
-#define SVT_VERSION_MAJOR 1
-#define SVT_VERSION_MINOR 3
+#define SVT_VERSION_MAJOR       1
+#define SVT_VERSION_MINOR       3
+#define SVT_VERSION_PATCHLEVEL  0
 
 #define EB_HME_SEARCH_AREA_COLUMN_MAX_COUNT     2
 #define EB_HME_SEARCH_AREA_ROW_MAX_COUNT        2

@@ -1327,7 +1327,7 @@ APPEXITCONDITIONTYPE ProcessOutputStreamBuffer(
                     headerPtr->nFlags);
                 return APP_ExitConditionError;
             }
-            else if (stream_status != EB_NoErrorEmptyQueue) {
+            else if (stream_status != EB_NoErrorEmptyQueue && streamFile) {
                 fwrite(headerPtr->pBuffer, 1, headerPtr->nFilledLen, streamFile);
             }
             config->performanceContext.byteCount += headerPtr->nFilledLen;
